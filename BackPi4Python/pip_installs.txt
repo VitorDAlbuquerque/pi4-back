@@ -1,3 +1,4 @@
 pip install flask
 pip install waitress
 pip install selenium
+pip install flask_cors
