@@ -1,0 +1,5 @@
+flask
+waitress
+selenium
+flask_cors
+requests
