@@ -9,12 +9,17 @@ import time
 
 def listAllCaixa():
     options = Options()
-    #options.add_argument('--headless')
+   # options.add_argument('--headless')
     options.add_argument('--disable-gpu')
     options.add_argument('--no-sandbox')
     options.add_argument('--disable-dev-shm-usage')
     options.add_argument('--window-size=1920,1080')
+    options.add_argument('--enable-unsafe-swiftshader')
     options.add_argument(f"--user-data-dir={tempfile.mkdtemp()}")
+    options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36")
+    options.add_argument("--disable-blink-features=AutomationControlled")
+    options.add_experimental_option("excludeSwitches", ["enable-automation"])
+    options.add_experimental_option('useAutomationExtension', False)
 
     driver = webdriver.Chrome(options=options)
     driver.get("https://venda-imoveis.caixa.gov.br/sistema/busca-imovel.asp?")
@@ -63,50 +68,23 @@ def listAllCaixa():
     results = []
 
     for idx, card in enumerate(cards, 1):
-        title =  city = card.find_element(By.TAG_NAME, "a").text.split("-")
         try:
-            city = title[0]
+            city = card.find_element(By.TAG_NAME, "a").text.split("-")[0]
         except:
             city = "N/A"
-        
         try:
-            valor = driver.find_elements(By.TAG_NAME, "font[style='font-size:0.80em;']")
+            price_elem = card.find_element(By.XPATH, ".//b[contains(text(), 'Valor mínimo de venda:')]")
+            price = price_elem.text.replace("Valor mínimo de venda:", "").strip()
         except:
-            valor = "n/a"
-        # try:
-        #     price = card.find_element(By.CLASS_NAME, "price").text.split("\n")[0].strip()
-        # except:
-        #     price = "N/A"
-        # try:
-        #     auction_date = description[0]
-        # except:
-        #     auction_date = "N/A"
-        # try:
-        #     showDescription = description[1]
-        # except:
-        #     showDescription = "N/A"
-        # try:
-        #     link = card.get_attribute("href")
-        #     if link and link.startswith("/"):
-        #         link = "https://vitrinebradesco.com.br" + link
-        # except:
-        #     link = "N/A"
-        # try:
-        #     imageUrl = card.find_element(By.CLASS_NAME, "lazy-thumbnail").get_attribute("src")
-        # except:
-        #     imageUrl = "N/A"
-        # results.append({
-        #     "city": city,
-        #     "price": price,
-        #     "auction_date": auction_date,
-        #     "showDescription": showDescription,
-        #     "link": link,
-        #     "imageUrl": imageUrl,
-        #     "banco": "Bradesco"
-        # })
+            price = "N/A"
+        try:
+            auction_date = card.find_element(By)
+        except:
+            auction_date = "N/A"
 
         print(city)
-        print(valor)
+        print(price)
+        results.append({"city": city, "price": price})
 
     driver.quit()
 listAllCaixa()
