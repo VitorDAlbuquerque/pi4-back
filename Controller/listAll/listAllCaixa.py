@@ -69,60 +69,66 @@ def listAllCaixa():
 
         results = []
 
-    #bah isso resolve tudo faz com essa bomba ai separando o array (mas é um str)
-    showDescription = driver.find_element(By.CLASS_NAME, "control-item.control-span-12_12").text
+    #Can be a good thing
+    #showDescription = driver.find_element(By.CLASS_NAME, "control-item.control-span-12_12").text
 
-   
-    #Código periddo :D
-    # for idx, card in enumerate(cards, 1):
-    #     try:
-    #         city = card.find_element(By.TAG_NAME, "a").text.split("-")[0]
-    #     except:
-    #         city = "N/A"
+    for idx, card in enumerate(cards, 1):
+         eachCard = card.find_element(By.CLASS_NAME,"dadosimovel-col2").text
+         eachCard = eachCard.split("\n")
 
-    #     try:
-    #         price_elem = card.find_element(By.XPATH, ".//b[contains(text(), 'Valor mínimo de venda:')]")
-    #         price = price_elem.text.replace("Valor mínimo de venda:", "").strip()
-    #     except:
-    #         price = "N/A"
+         dias_id = f"dias{idx - 1}"
+         horas_id = f"horas{idx - 1}"
+         minutos_id = f"minutos{idx - 1}"
+         segundos_id = f"segundos{idx - 1}"
 
-    #     # Acessa o contador referente a este imóvel
-    #     dias_id = f"dias{idx - 1}"
-    #     horas_id = f"horas{idx - 1}"
-    #     minutos_id = f"minutos{idx - 1}"
-    #     segundos_id = f"segundos{idx - 1}"
-
-    #     try:
-    #         dias = driver.find_element(By.ID, dias_id).text
-    #         horas = driver.find_element(By.ID, horas_id).text
-    #         minutos = driver.find_element(By.ID, minutos_id).text
-    #         segundos = driver.find_element(By.ID, segundos_id).text
-    #         dias.split(" ")
-    #         horas.split(" ")
-    #         minutos.split(" ")
-    #         segundos.split(" ")
-    #         auction_date = f"{dias[1]} dias, {horas[1]}h {minutos[1]}min {segundos[1]}s"
-    #     except:
-    #         auction_date = "N/A"
+         try:
+             dias = driver.find_element(By.ID, dias_id).text
+             horas = driver.find_element(By.ID, horas_id).text
+             minutos = driver.find_element(By.ID, minutos_id).text
+             segundos = driver.find_element(By.ID, segundos_id).text
+             dias.split(" ")
+             horas.split(" ")
+             minutos.split(" ")
+             segundos.split(" ")
+             auction_date = f"{dias[1]} dias, {horas[1]}h {minutos[1]}min {segundos[1]}s"
+         except:
+             auction_date = "N/A"
         
-    #     try:
-    #         showDescription = driver.find_element(By.CLASS_NAME, "control-item.control-span-12_12").text
-    #     except:
-    #         showDescription = "N/A"
-
-    #print(f"{showDescription}")
-
-    results.append({
-            # "id": idx,
-            # "city": city,
-            # "price": price,
-            # "auction_date": auction_date,
-            "showDescription": showDescription,
+         try:
+            city = eachCard[0]
+         except:
+            city = "N/A"
+        
+         try:
+            price = eachCard[1]
+         except:
+            price = "N/A"
+         
+         try:
+            showDescription = eachCard[6]
+         except:
+            showDescription = "N/A"
+         try:
+             area = "Não informado"
+         except:
+             area = "Não informado"
+         try:
+             imageUrl = card.find_element(By.CLASS_NAME,"fotoimovel").get_attribute("src")
+             imageUrl = "https://venda-imoveis.caixa.gov.br" + imageUrl
+         except:
+             imageUrl = "N/A"
+         
+         results.append({
+             "id": idx,
+             "city": city,
+             "price": price,
+             "auction_date": auction_date,
+             "showDescription": showDescription,
             #"link": link,
-            #"imageUrl": imageUrl,
-            #"area": area,
-            #"banco": "Bradesco"
+            "imageUrl": imageUrl,
+            "area": area,
+            "banco": "Caixa"
         })
 
     driver.quit()
-listAllCaixa()
+    return results
