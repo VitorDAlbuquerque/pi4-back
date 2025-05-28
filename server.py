@@ -2,15 +2,16 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 from waitress import serve
 from Controller.listAll.listAllBradesco import listAllBradesco
+from Controller.listAll.listAllCaixa import listAllCaixa
 app = Flask(__name__)
 CORS(app)
 
 @app.route("/bradesco")
-def list():
+def listBradesco():
     return jsonify(listAllBradesco())
 
 @app.route("/caixa")
-def list():
+def listCaixa():
     return jsonify(listAllCaixa())
 
 

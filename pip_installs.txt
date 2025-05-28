@@ -3,3 +3,5 @@ waitress
 selenium
 flask_cors
 requests
+
+usar o pip install com o -user na fatec bla bla bla

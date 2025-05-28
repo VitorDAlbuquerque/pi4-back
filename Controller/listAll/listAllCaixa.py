@@ -1,3 +1,4 @@
+from asyncio import wait
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
@@ -9,7 +10,7 @@ import time
 
 def listAllCaixa():
     options = Options()
-   # options.add_argument('--headless')
+    options.add_argument('--headless')
     options.add_argument('--disable-gpu')
     options.add_argument('--no-sandbox')
     options.add_argument('--disable-dev-shm-usage')
@@ -29,6 +30,7 @@ def listAllCaixa():
         EC.presence_of_element_located((By.CLASS_NAME, "wrapper"))
     )
 
+    time.sleep(1)
 
     select = Select(driver.find_element(By.ID, "cmb_estado"))
     select.select_by_visible_text('SP')
@@ -65,26 +67,62 @@ def listAllCaixa():
         last_count = len(cards)
     
 
-    results = []
+        results = []
 
-    for idx, card in enumerate(cards, 1):
-        try:
-            city = card.find_element(By.TAG_NAME, "a").text.split("-")[0]
-        except:
-            city = "N/A"
-        try:
-            price_elem = card.find_element(By.XPATH, ".//b[contains(text(), 'Valor mínimo de venda:')]")
-            price = price_elem.text.replace("Valor mínimo de venda:", "").strip()
-        except:
-            price = "N/A"
-        try:
-            auction_date = card.find_element(By)
-        except:
-            auction_date = "N/A"
+    #bah isso resolve tudo faz com essa bomba ai separando o array (mas é um str)
+    showDescription = driver.find_element(By.CLASS_NAME, "control-item.control-span-12_12").text
 
-        print(city)
-        print(price)
-        results.append({"city": city, "price": price})
+   
+    #Código periddo :D
+    # for idx, card in enumerate(cards, 1):
+    #     try:
+    #         city = card.find_element(By.TAG_NAME, "a").text.split("-")[0]
+    #     except:
+    #         city = "N/A"
+
+    #     try:
+    #         price_elem = card.find_element(By.XPATH, ".//b[contains(text(), 'Valor mínimo de venda:')]")
+    #         price = price_elem.text.replace("Valor mínimo de venda:", "").strip()
+    #     except:
+    #         price = "N/A"
+
+    #     # Acessa o contador referente a este imóvel
+    #     dias_id = f"dias{idx - 1}"
+    #     horas_id = f"horas{idx - 1}"
+    #     minutos_id = f"minutos{idx - 1}"
+    #     segundos_id = f"segundos{idx - 1}"
+
+    #     try:
+    #         dias = driver.find_element(By.ID, dias_id).text
+    #         horas = driver.find_element(By.ID, horas_id).text
+    #         minutos = driver.find_element(By.ID, minutos_id).text
+    #         segundos = driver.find_element(By.ID, segundos_id).text
+    #         dias.split(" ")
+    #         horas.split(" ")
+    #         minutos.split(" ")
+    #         segundos.split(" ")
+    #         auction_date = f"{dias[1]} dias, {horas[1]}h {minutos[1]}min {segundos[1]}s"
+    #     except:
+    #         auction_date = "N/A"
+        
+    #     try:
+    #         showDescription = driver.find_element(By.CLASS_NAME, "control-item.control-span-12_12").text
+    #     except:
+    #         showDescription = "N/A"
+
+    #print(f"{showDescription}")
+
+    results.append({
+            # "id": idx,
+            # "city": city,
+            # "price": price,
+            # "auction_date": auction_date,
+            "showDescription": showDescription,
+            #"link": link,
+            #"imageUrl": imageUrl,
+            #"area": area,
+            #"banco": "Bradesco"
+        })
 
     driver.quit()
 listAllCaixa()
