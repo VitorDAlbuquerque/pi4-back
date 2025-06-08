@@ -6,7 +6,7 @@ from Controller.auth.auth_utils import generate_token
 
 
 if not firebase_admin._apps:
-    cred = credentials.Certificate("./serviceAccountKey.json")
+    cred = credentials.Certificate(r"D:\Area de trabalho\BackPi4Python\pi4-back\lobotomia-18768-ba54adbffa99.json")
     firebase_admin.initialize_app(cred, {
         'databaseURL': 'https://lobotomia-18768-default-rtdb.firebaseio.com/'
     })
@@ -26,5 +26,3 @@ def login(username: str, password: str) -> str | None:
     if user.password == hashed_pw:
         return generate_token(username)
     return None
-
-# token = login('Testee', 'testeaaaa')
