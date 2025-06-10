@@ -11,13 +11,31 @@ if not firebase_admin._apps:
 
 
 
+def pickProperty(property_id: str) -> dict | None:
+    all_properties = db.reference('test_all_banks').get() or {}
+
+    for prop in all_properties.values():
+        if str(prop.get("id")) == str(property_id):
+            return prop
+    return None
+
+def parse_brazilian_currency(value_str):
+    if not value_str:
+        return 0.0
+
+    value_str = value_str.replace('R$', '').replace('.', '').replace(',', '.').strip()
+    try:
+        return float(value_str)
+    except ValueError:
+        return 0.0
+
 def filter_bradesco(
-    value: Optional[float] = None,
+    min_value: Optional[float] = None,
+    max_value: Optional[float] = None,
     city: Optional[str] = None,
-    area: Optional[str] = None, # em m²
-    date: Optional[str] = None  # 'YYYY-MM-DD'
+    area: Optional[str] = None,  # em m²
+    date: Optional[str] = None   # 'YYYY-MM-DD'
 ) -> List[Dict[str, Any]]:
-  
     ref = db.reference('test_all_banks')
     data = ref.get() or []
 
@@ -26,7 +44,11 @@ def filter_bradesco(
     for item_id, item in items:
         if not item:
             continue
-        if value is not None and float(item.get("value", 0)) != value:
+
+        item_value = parse_brazilian_currency(item.get("price", 0))
+        if min_value is not None and item_value < min_value:
+            continue
+        if max_value is not None and item_value > max_value:
             continue
         if city is not None and item.get("city", "").lower() != city.lower():
             continue
@@ -43,5 +65,5 @@ def filter_bradesco(
                 except Exception:
                     continue
         filtered.append(item)
+    print(filtered)
     return filtered
-

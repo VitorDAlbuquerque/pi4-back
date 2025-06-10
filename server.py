@@ -16,6 +16,7 @@ from Controller.folder.crudFolder import (
 )
 from Controller.filter.filter import filter_bradesco
 from Controller.listAll.listPropertys import list_all_propertys
+from Controller.filter.filter import pickProperty
 
 app = Flask(__name__)
 CORS(app)
@@ -142,7 +143,7 @@ def list_folders_route():
     result = list_folders()
     return jsonify(result)
 
-@app.route("/read_folder", methods=["GET"])
+@app.route("/read_folder", methods=["POST"])
 @token_required
 def read_folder_route():
     data = request.json
@@ -153,6 +154,20 @@ def read_folder_route():
     if result:
         return jsonify(result)
     return jsonify({"error": "Folder not found"}), 404
+
+
+@app.route("/pickProperty", methods=["POST"])
+@token_required
+def pick_property_route():
+    data = request.json
+    property_id = data.get("property_id")
+    if not property_id:
+        return jsonify({"error": "Missing property_id"}), 400
+    result = pickProperty(property_id)
+    if result:
+        return jsonify(result)
+    return jsonify({"error": "Property not found"}), 404
+
 
 @app.route("/update_folder", methods=["PUT"])
 @token_required
@@ -183,11 +198,14 @@ def delete_folder_route():
 @token_required
 def add_property_to_folder_route():
     data = request.json
+    print(data)
     folder_id = data.get("folder_id")
-    property_data = data.get("property")
-    if not folder_id or property_data is None:
+    property_id = data.get("property_id")
+    
+
+    if not folder_id or property_id is None:
         return jsonify({"error": "Missing folder_id or property"}), 400
-    result = add_property_to_folder(folder_id, property_data)
+    result = add_property_to_folder(folder_id, property_id)
     if result:
         return jsonify(result)
     return jsonify({"error": "Folder not found"}), 404
@@ -210,23 +228,17 @@ def list_propertys_route():
     results = list_all_propertys()
     return jsonify(results)
 
-@app.route("/filter_bradesco", methods=["POST"])
-@token_required
-def filter_bradesco_route():
+@app.route('/filter_bradesco', methods=['POST'])
+def filter_endpoint():
     data = request.json
-    value = data.get("value")
-    state = data.get("state")
-    city = data.get("city")
-    area = data.get("area")
-    date = data.get("date")
-    results = filter_bradesco(
-        value=value,
-        state=state,
-        city=city,
-        area=area,
-        date=date
+    result = filter_bradesco(
+        min_value=data.get('min_value'),
+        max_value=data.get('max_value'),
+        city=data.get('city'),
+        area=data.get('area'),
+        date=data.get('date')
     )
-    return jsonify(results)
+    return jsonify(result)
 
 
 

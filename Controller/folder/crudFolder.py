@@ -2,16 +2,18 @@ import firebase_admin
 from firebase_admin import credentials, db
 import uuid
 from config import cred
-
+from Controller.filter.filter import pickProperty
 if not firebase_admin._apps:
     firebase_admin.initialize_app(cred, {
         'databaseURL': 'https://lobotomia-18768-default-rtdb.firebaseio.com/'
     })
 
-def list_folders() -> list | None:
+def list_folders() -> list:
     ref = db.reference('folders')
     folders = ref.get()
-    return folders if folders else None
+    if not folders:
+        return []
+    return list(folders.values())
 
 def create_folder(folder_name: str) -> str | None:
     ref = db.reference('folders')
@@ -25,10 +27,21 @@ def create_folder(folder_name: str) -> str | None:
     ref.child(folder_id).set({"id": folder_id, "name": folder_name})
     return folder_id
 
-def read_folder(folder_id: str) -> dict | None:
-    ref = db.reference('folders').child(folder_id)
-    data = ref.get()
-    return data if data else None
+def read_folder(folder_id: str) -> list | None:
+    folder_ref = db.reference('folders').child(folder_id)
+    folder = folder_ref.get()
+    if not folder:
+        return None
+
+    all_properties = db.reference('test_all_banks').get() or {}
+
+    property_ids = folder.get("properties", [])
+    properties = []
+    for prop in all_properties.values():
+        if str(prop.get("id")) in [str(pid) for pid in property_ids]:
+            properties.append(prop)
+
+    return properties if properties else []
 
 def update_folder(folder_id: str, new_name: str) -> bool:
     ref = db.reference('folders').child(folder_id)
@@ -45,20 +58,28 @@ def delete_folder(folder_id: str) -> bool:
     return True
 
 def add_property_to_folder(folder_id: str, property_id: str) -> bool:
-
-    property_ref = db.reference('test_bradesco').child(property_id)
-    if not property_ref.get():
-        return False 
+    # Ensure the property exists by its "id" field
+    property_data = pickProperty(property_id)
+    print(property_data)
+    if not property_data:
+        return False
 
     folder_ref = db.reference('folders').child(folder_id)
     folder = folder_ref.get()
     if not folder:
-        return False 
+        return False
+    
 
-    properties = folder.get("properties", [])
-    if property_id not in properties:
-        properties.append(property_id)
+    # Ensure "properties" is a list
+    properties = folder.get("properties")
+    if not isinstance(properties, list):
+        properties = []
+
+    # Only add if not already present (as string for consistency)
+    if str(property_id) not in [str(pid) for pid in properties]:
+        properties.append(str(property_id))
         folder_ref.update({"properties": properties})
+
     return True
 
 def remove_property_from_folder(folder_id: str, property_id: str) -> bool:
