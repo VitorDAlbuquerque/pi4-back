@@ -7,6 +7,3 @@ PyJWT
 firebase-admin
 dataclasses
 
-usar o pip update lá com o -user na fatec bla bla bla
-
-pip install -r requirements.txt <- comando

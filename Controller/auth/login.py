@@ -3,17 +3,17 @@ from firebase_admin import credentials, db
 import hashlib
 from Controller.models.user import User
 from Controller.auth.auth_utils import generate_token
-
+from config import cred
 
 if not firebase_admin._apps:
-    cred = credentials.Certificate(r"D:\Area de trabalho\BackPi4Python\pi4-back\lobotomia-18768-ba54adbffa99.json")
-    firebase_admin.initialize_app(cred, {
+ firebase_admin.initialize_app(cred, {
         'databaseURL': 'https://lobotomia-18768-default-rtdb.firebaseio.com/'
     })
 
 def hash_password(password: str) -> str:
     """Hashes a password using SHA-256."""
     return hashlib.sha256(password.encode('utf-8')).hexdigest()
+
 
 def login(username: str, password: str) -> str | None:
     ref = db.reference('users')

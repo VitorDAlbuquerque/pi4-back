@@ -1,0 +1,1 @@
+global_idx = 1

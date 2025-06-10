@@ -7,6 +7,8 @@ from selenium.webdriver.support import expected_conditions as EC
 import tempfile
 from selenium.webdriver.support.ui import Select
 import time
+from Controller.listAll import global_counter
+from firebase_admin import credentials, db
 
 def listAllCaixa():
     options = Options()
@@ -52,83 +54,92 @@ def listAllCaixa():
     select.select_by_value('0')
     driver.find_element(By.ID, 'btn_next1').click()
 
+    results = []
+
+
+    # Wait for the first page of results
     WebDriverWait(driver, 10).until(
         EC.presence_of_element_located((By.CLASS_NAME, "control-group.no-bullets"))
     )
 
+    # Get the number of pages from the pagination
+    paginacao = driver.find_element(By.ID, "paginacao")
+    page_links = paginacao.find_elements(By.TAG_NAME, "a")
+    total_pages = len(page_links)
 
-    last_count = 0
-    while True:
-        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-        time.sleep(0.7) 
+    for page in range(1, total_pages + 1):
+        if page > 1:
+            paginacao = driver.find_element(By.ID, "paginacao")
+            page_links = paginacao.find_elements(By.TAG_NAME, "a")
+            driver.execute_script("arguments[0].click();", page_links[page-1])
+            WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.CLASS_NAME, "control-group.no-bullets"))
+            )
+            time.sleep(1)
+
         cards = driver.find_elements(By.CLASS_NAME, "control-group.no-bullets")
-        if len(cards) == last_count:
-            break
-        last_count = len(cards)
-    
+        for card in cards:
+            eachCard = card.find_element(By.CLASS_NAME,"dadosimovel-col2").text
+            eachCard = eachCard.split("\n")
 
-        results = []
+           # dias_id = f"dias{cards.index(card)}"
+           # horas_id = f"horas{cards.index(card)}"
+            #minutos_id = f"minutos{cards.index(card)}"
+           # segundos_id = f"segundos{cards.index(card)}"
 
-    #Can be a good thing
-    #showDescription = driver.find_element(By.CLASS_NAME, "control-item.control-span-12_12").text
+            try:
+                #dias = driver.find_element(By.ID, dias_id).text
+               # horas = driver.find_element(By.ID, horas_id).text
+                #minutos = driver.find_element(By.ID, minutos_id).text
+               #segundos = driver.find_element(By.ID, segundos_id).text
+                auction_date = "Não informado"
+            except:
+                auction_date = "N/A"
+            
+            try:
+                city = eachCard[0]
+            except:
+                city = "N/A"
+            
+            try:
+                price = eachCard[1]
+            except:
+                price = "N/A"
+            
+            try:
+                showDescription = eachCard[6]
+            except:
+                showDescription = "N/A"
+            try:
+                area = "Não informado"
+            except:
+                area = "Não informado"
+            try:
+                imageUrl = card.find_element(By.CLASS_NAME,"fotoimovel").get_attribute("src")
+                imageUrl = "https://venda-imoveis.caixa.gov.br" + imageUrl
+            except:
+                imageUrl = "N/A"
+            
+            results.append({
+                "id": global_counter.global_idx,
+                "link": "Não informado",
+                "city": city,
+                "price": price,
+                "auction_date": auction_date,
+                "showDescription": showDescription,
+                "imageUrl": imageUrl,
+                "area": area,
+                "banco": "Caixa"
+            })
 
-    for idx, card in enumerate(cards, 1):
-         eachCard = card.find_element(By.CLASS_NAME,"dadosimovel-col2").text
-         eachCard = eachCard.split("\n")
+            global_counter.global_idx += 1
 
-         dias_id = f"dias{idx - 1}"
-         horas_id = f"horas{idx - 1}"
-         minutos_id = f"minutos{idx - 1}"
-         segundos_id = f"segundos{idx - 1}"
-
-         try:
-             dias = driver.find_element(By.ID, dias_id).text
-             horas = driver.find_element(By.ID, horas_id).text
-             minutos = driver.find_element(By.ID, minutos_id).text
-             segundos = driver.find_element(By.ID, segundos_id).text
-             dias.split(" ")
-             horas.split(" ")
-             minutos.split(" ")
-             segundos.split(" ")
-             auction_date = f"{dias[1]} dias, {horas[1]}h {minutos[1]}min {segundos[1]}s"
-         except:
-             auction_date = "N/A"
-        
-         try:
-            city = eachCard[0]
-         except:
-            city = "N/A"
-        
-         try:
-            price = eachCard[1]
-         except:
-            price = "N/A"
-         
-         try:
-            showDescription = eachCard[6]
-         except:
-            showDescription = "N/A"
-         try:
-             area = "Não informado"
-         except:
-             area = "Não informado"
-         try:
-             imageUrl = card.find_element(By.CLASS_NAME,"fotoimovel").get_attribute("src")
-             imageUrl = "https://venda-imoveis.caixa.gov.br" + imageUrl
-         except:
-             imageUrl = "N/A"
-         
-         results.append({
-             "id": idx,
-             "city": city,
-             "price": price,
-             "auction_date": auction_date,
-             "showDescription": showDescription,
-            #"link": link,
-            "imageUrl": imageUrl,
-            "area": area,
-            "banco": "Caixa"
-        })
+    driver.quit()
+    ref = db.reference('test_all_banks')
+    for entry in results:
+        ref.push(entry)
+    print("Itau uploaded")
 
     driver.quit()
     return results
+

@@ -1,24 +1,27 @@
 from flask import Flask, jsonify, request
-from flask_cors import CORS
+from flask_cors import CORS, cross_origin
 from waitress import serve
+from Controller.listAll.listAllItau import listAllItau
 from Controller.listAll.listAllBradesco import listAllBradesco
 from Controller.listAll.listAllCaixa import listAllCaixa
+from Controller.listAll.listAllSantander import listAllSantander
 from Controller.auth.register import register
 from Controller.auth.login import login
 from Controller.auth.auth_utils import verify_token
 from Controller.auth.delete_user import delete_user
-from Controller.listAll.test_bradesco_db import upload_test_bradesco, delete_test_bradesco
+from Controller.listAll.test_bradesco_db import upload_all_banks, delete_all_banks
 from Controller.folder.crudFolder import (
-    create_folder, read_folder, update_folder, delete_folder,
+    create_folder, list_folders, read_folder, update_folder, delete_folder,
     add_property_to_folder, remove_property_from_folder
 )
 from Controller.filter.filter import filter_bradesco
+from Controller.listAll.listPropertys import list_all_propertys
 
 app = Flask(__name__)
 CORS(app)
 
 
-@app.route("/register")
+@app.route("/register", methods=["POST"])
 def register_route():
     data = request.json
     username = data.get("username")
@@ -30,15 +33,17 @@ def register_route():
         return jsonify({"message": "User registered successfully"})
     return jsonify({"error": "User already exists"}), 409
 
-@app.route("/login")
+@app.route("/login", methods=["POST"])
 def login_route():
     data = request.json
     username = data.get("username")
     password = data.get("password")
     token = login(username, password)
     if token:
-        return jsonify({"token": token})
+        return jsonify({"token": token, "username": username, "password": password})
     return jsonify({"error": "Invalid credentials"}), 401
+
+
 
 def token_required(f):
     def wrapper(*args, **kwargs):
@@ -53,23 +58,52 @@ def token_required(f):
     wrapper.__name__ = f.__name__
     return wrapper
 
-@app.route("/protected")
+@app.route("/userInfo", methods=["GET", "OPTIONS"])
+@cross_origin()
+@token_required
+def user_info_route():
+    if request.method == "OPTIONS":
+        return '', 200
+    auth_header = request.headers.get('Authorization')
+    token = auth_header.split(" ")[-1]
+    payload = verify_token(token)
+    if not payload:
+        return jsonify({"error": "Invalid token"}), 401
+    username = payload.get("username")
+    return jsonify({
+        "username": username,
+        "password": payload.get("password"),
+        "email": payload.get("email"),
+        "message": "User authenticated successfully"
+    })
+@app.route("/protected", methods=["GET"])
 @token_required
 def protected_route():
     return jsonify({"message": "You are authenticated!"})
 
 
-@app.route("/bradesco")
-@token_required
+@app.route("/bradesco", methods=["GET"])
+
 def listBradesco():
     return jsonify(listAllBradesco())
 
-@app.route("/caixa")
-@token_required
+@app.route("/itau", methods=["GET"])
+
+def listItau():
+    return jsonify(listAllItau())
+
+@app.route("/santander", methods=["GET"])
+
+def listSantander():
+    return jsonify(listAllSantander())
+
+
+@app.route("/caixa", methods=["GET"])
+
 def listCaixa():
     return jsonify(listAllCaixa())
 
-@app.route("/delete_user")
+@app.route("/delete_user", methods=["DELETE"])
 @token_required
 def delete_user_route():
     auth_header = request.headers.get('Authorization')
@@ -84,73 +118,97 @@ def delete_user_route():
 
 @app.route("/test/upload_bradesco")
 def upload_bradesco_route():
-    upload_test_bradesco()
+    upload_all_banks()
     return jsonify({"message": "Test Bradesco data uploaded."})
 
 @app.route("/test/delete_bradesco")
 def delete_bradesco_route():
-    delete_test_bradesco()
+    delete_all_banks()
     return jsonify({"message": "Test Bradesco data deleted."})
 
-@app.route("/folder", methods=["POST"])
+@app.route("/create_folder", methods=["POST"])
 @token_required
 def create_folder_route():
     data = request.json
-    folder_name = data.get("name")
-    if not folder_name:
+    name = data.get("name")
+    if not name:
         return jsonify({"error": "Missing folder name"}), 400
-    folder_id = create_folder(folder_name)
-    if folder_id:
-        return jsonify({"message": "Folder created", "id": folder_id})
-    return jsonify({"error": "Folder name already exists"}), 409
+    result = create_folder(name)
+    return jsonify(result)
 
-@app.route("/folder/<folder_id>", methods=["GET"])
+@app.route("/list_folders", methods=["GET"])
 @token_required
-def read_folder_route(folder_id):
-    folder = read_folder(folder_id)
-    if folder:
-        return jsonify(folder)
-    return jsonify({"error": "Folder not found"}), 404
+def list_folders_route():
+    result = list_folders()
+    return jsonify(result)
 
-@app.route("/folder/<folder_id>", methods=["PUT"])
+@app.route("/read_folder", methods=["GET"])
 @token_required
-def update_folder_route(folder_id):
+def read_folder_route():
     data = request.json
-    new_name = data.get("name")
-    if not new_name:
-        return jsonify({"error": "Missing new folder name"}), 400
-    if update_folder(folder_id, new_name):
-        return jsonify({"message": "Folder updated"})
+    folder_id = data.get("folder_id")
+    if not folder_id:
+        return jsonify({"error": "Missing folder_id"}), 400
+    result = read_folder(folder_id)
+    if result:
+        return jsonify(result)
     return jsonify({"error": "Folder not found"}), 404
 
-@app.route("/folder/<folder_id>", methods=["DELETE"])
+@app.route("/update_folder", methods=["PUT"])
 @token_required
-def delete_folder_route(folder_id):
-    if delete_folder(folder_id):
-        return jsonify({"message": "Folder deleted"})
-    return jsonify({"error": "Folder not found"}), 404
-
-@app.route("/folder/<folder_id>/add_property", methods=["POST"])
-@token_required
-def add_property_route(folder_id):
+def update_folder_route():
     data = request.json
+    folder_id = data.get("folder_id")
+    name = data.get("name")
+    if not folder_id or not name:
+        return jsonify({"error": "Missing folder_id or name"}), 400
+    result = update_folder(folder_id, name)
+    if result:
+        return jsonify(result)
+    return jsonify({"error": "Folder not found"}), 404
+
+@app.route("/delete_folder", methods=["DELETE"])
+@token_required
+def delete_folder_route():
+    data = request.json
+    folder_id = data.get("folder_id")
+    if not folder_id:
+        return jsonify({"error": "Missing folder_id"}), 400
+    result = delete_folder(folder_id)
+    if result:
+        return jsonify({"message": "Folder deleted successfully"})
+    return jsonify({"error": "Folder not found"}), 404
+
+@app.route("/add_property_to_folder", methods=["POST"])
+@token_required
+def add_property_to_folder_route():
+    data = request.json
+    folder_id = data.get("folder_id")
+    property_data = data.get("property")
+    if not folder_id or property_data is None:
+        return jsonify({"error": "Missing folder_id or property"}), 400
+    result = add_property_to_folder(folder_id, property_data)
+    if result:
+        return jsonify(result)
+    return jsonify({"error": "Folder not found"}), 404
+
+@app.route("/remove_property_from_folder", methods=["DELETE"])
+@token_required
+def remove_property_from_folder_route():
+    data = request.json
+    folder_id = data.get("folder_id")
     property_id = data.get("property_id")
-    if not property_id:
-        return jsonify({"error": "Missing property_id"}), 400
-    if add_property_to_folder(folder_id, property_id):
-        return jsonify({"message": "Property added to folder"})
+    if not folder_id or not property_id:
+        return jsonify({"error": "Missing folder_id or property_id"}), 400
+    result = remove_property_from_folder(folder_id, property_id)
+    if result:
+        return jsonify(result)
     return jsonify({"error": "Folder or property not found"}), 404
 
-@app.route("/folder/<folder_id>/remove_property", methods=["POST"])
-@token_required
-def remove_property_route(folder_id):
-    data = request.json
-    property_id = data.get("property_id")
-    if not property_id:
-        return jsonify({"error": "Missing property_id"}), 400
-    if remove_property_from_folder(folder_id, property_id):
-        return jsonify({"message": "Property removed from folder"})
-    return jsonify({"error": "Folder or property not found"}), 404
+@app.route("/listPropertys", methods=["GET"])
+def list_propertys_route():
+    results = list_all_propertys()
+    return jsonify(results)
 
 @app.route("/filter_bradesco", methods=["POST"])
 @token_required
@@ -171,7 +229,6 @@ def filter_bradesco_route():
     return jsonify(results)
 
 
-if __name__ == "__main__":
-    serve(app, host="0.0.0.0", port=3333)
 
-
+print("Starting server on port 3333")
+serve(app, host="0.0.0.0", port=3333)

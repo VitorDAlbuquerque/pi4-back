@@ -1,14 +1,17 @@
 import firebase_admin
 from firebase_admin import credentials, db
 import uuid
+from config import cred
 
-
-    
-cred = credentials.Certificate(r"D:\Area de trabalho\BackPi4Python\pi4-back\lobotomia-18768-ba54adbffa99.json")
 if not firebase_admin._apps:
     firebase_admin.initialize_app(cred, {
         'databaseURL': 'https://lobotomia-18768-default-rtdb.firebaseio.com/'
     })
+
+def list_folders() -> list | None:
+    ref = db.reference('folders')
+    folders = ref.get()
+    return folders if folders else None
 
 def create_folder(folder_name: str) -> str | None:
     ref = db.reference('folders')
