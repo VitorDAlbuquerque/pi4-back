@@ -13,13 +13,12 @@ if not firebase_admin._apps:
 
 def filter_bradesco(
     value: Optional[float] = None,
-    state: Optional[str] = None,
     city: Optional[str] = None,
-    area: Optional[str] = None,
+    area: Optional[str] = None, # em m²
     date: Optional[str] = None  # 'YYYY-MM-DD'
 ) -> List[Dict[str, Any]]:
   
-    ref = db.reference('test_bradesco')
+    ref = db.reference('test_all_banks')
     data = ref.get() or []
 
     filtered = []
@@ -28,8 +27,6 @@ def filter_bradesco(
         if not item:
             continue
         if value is not None and float(item.get("value", 0)) != value:
-            continue
-        if state is not None and item.get("state", "").lower() != state.lower():
             continue
         if city is not None and item.get("city", "").lower() != city.lower():
             continue
